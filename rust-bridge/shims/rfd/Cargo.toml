@@ -1,0 +1,15 @@
+[package]
+name = "rfd"
+version = "0.17.2"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+description = "Android SAF bridge shim for rfd AsyncFileDialog in PdfCraft"
+
+[features]
+default = []
+file-handle-inner = []
+xdg-portal = []
+gtk3 = []
+common-controls-v6 = []
+async-std = []
+tokio = []

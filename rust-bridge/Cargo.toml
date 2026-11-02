@@ -1,0 +1,68 @@
+[package]
+name = "pdfcraft_android"
+version = "0.17.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+description = "JNI + OpenGL ES 3.0 egui_glow bridge embedding PdfCraft on Android"
+
+[lib]
+name = "pdfcraft_android"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pdfcraft-ui-egui = { path = "../pdfcraft/crates/ui-egui" }
+pdfcraft-engine = { path = "../pdfcraft/crates/engine" }
+pdfcraft-print = { path = "../pdfcraft/crates/print" }
+arboard = "3.7.0"
+rfd = "0.17.2"
+egui = { version = "0.37", features = ["bytemuck", "default_fonts", "monochrome_emoji_fonts"] }
+egui_glow = "0.37"
+glow = "0.17"
+jni = "0.21"
+libc = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+log = "0.4"
+
+[target.'cfg(target_os = "android")'.dependencies]
+android_logger = "0.14"
+eframe = { version = "0.37", default-features = false, features = ["android-native-activity"] }
+# Only to name `AndroidApp` in the no-op `android_main` the native-activity glue links against.
+android-activity = "0.6"
+
+[profile.dev.package."*"]
+opt-level = 2
+debug = false
+
+[profile.dev]
+opt-level = 1
+debug = "line-tables-only"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+opt-level = 3
+
+[patch.crates-io]
+arboard = { path = "shims/arboard" }
+rfd = { path = "shims/rfd" }
+hayro-interpret = { path = "../pdfcraft/vendor/hayro-interpret" }
+hayro = { path = "../pdfcraft/vendor/hayro" }
+hayro-syntax = { path = "../pdfcraft/vendor/hayro-syntax" }
+hayro-cmap = { path = "../pdfcraft/vendor/hayro-cmap" }
+hayro-postscript = { path = "../pdfcraft/vendor/hayro-postscript" }
+hayro-jbig2 = { path = "../pdfcraft/vendor/hayro-jbig2" }
+lopdf = { path = "../pdfcraft/vendor/lopdf" }
+vello_common = { path = "../pdfcraft/vendor/vello_common" }
+vello_cpu = { path = "../pdfcraft/vendor/vello_cpu" }
+ecolor = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
+emath = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
+epaint = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
+epaint_default_fonts = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
+egui = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
+egui-winit = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
+egui-wgpu = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
+egui_glow = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
+egui_extras = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
+eframe = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
+winit = { git = "https://github.com/storytold/winit.git", rev = "a517b3846ee8457d84ee4975110bfda6797c44dc" }

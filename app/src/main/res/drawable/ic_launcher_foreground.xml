@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Custom PdfCraft PDF Workbench emblem: stacked precision page sheet (#EFE9DC) + ink drafting nib & crop marks (#0B0B0C) -->
+    <!-- Back stacked sheet shadow -->
+    <path
+        android:fillColor="#0B0B0C"
+        android:fillAlpha="0.32"
+        android:pathData="M35,28h34l10,10v44c0,2.2 -1.8,4 -4,4H35c-2.2,0 -4,-1.8 -4,-4V32c0,-2.2 1.8,-4 4,-4z" />
+    <!-- Primary archival paper sheet -->
+    <path
+        android:fillColor="#EFE9DC"
+        android:strokeColor="#0B0B0C"
+        android:strokeWidth="2.4"
+        android:strokeLineJoin="round"
+        android:pathData="M32,24h32l12,12v44c0,2.2 -1.8,4 -4,4H32c-2.2,0 -4,-1.8 -4,-4V28c0,-2.2 1.8,-4 4,-4z" />
+    <!-- Dog-ear folded corner -->
+    <path
+        android:fillColor="#D8CEBA"
+        android:strokeColor="#0B0B0C"
+        android:strokeWidth="2.2"
+        android:strokeLineJoin="round"
+        android:pathData="M64,24v12h12z" />
+    <!-- Precision typography & redaction bars -->
+    <path
+        android:fillColor="#B70228"
+        android:pathData="M35,43h20v5.5h-20z" />
+    <path
+        android:strokeColor="#0B0B0C"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:pathData="M36,55h30M36,62h24M36,69h18" />
+    <!-- Desktop cursor / precision drafting nib badge -->
+    <path
+        android:fillColor="#0B0B0C"
+        android:strokeColor="#EFE9DC"
+        android:strokeWidth="1.6"
+        android:strokeLineJoin="round"
+        android:pathData="M58,56l19,8l-8,3.2l4.5,8.5l-3.8,2l-4.5,-8.5l-5.2,6.2z" />
+</vector>
