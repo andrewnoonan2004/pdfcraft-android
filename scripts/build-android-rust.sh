@@ -7,8 +7,19 @@ PROJECT_HASH="$(printf '%s' "$PROJECT_ROOT" | sha1sum | cut -c1-8)"
 export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$HOME/Android/Sdk/cmake/3.31.6/bin:$PATH"
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$HOME/.cache/projects/Pdfcraft-android-$PROJECT_HASH/cargo}"
 
-export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}"
-export ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT:-$ANDROID_SDK_ROOT/ndk/29.0.14206865}"
+export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Android/Sdk}}"
+
+if [ -z "${ANDROID_NDK_ROOT:-}" ]; then
+  if [ -d "$ANDROID_SDK_ROOT/ndk/29.0.14206865" ]; then
+    export ANDROID_NDK_ROOT="$ANDROID_SDK_ROOT/ndk/29.0.14206865"
+  elif [ -d "$ANDROID_SDK_ROOT/ndk" ] && [ -n "$(ls -A "$ANDROID_SDK_ROOT/ndk" 2>/dev/null)" ]; then
+    export ANDROID_NDK_ROOT="$(ls -d "$ANDROID_SDK_ROOT/ndk"/* | sort -V | tail -n 1)"
+  elif [ -n "${ANDROID_NDK_HOME:-}" ]; then
+    export ANDROID_NDK_ROOT="$ANDROID_NDK_HOME"
+  else
+    export ANDROID_NDK_ROOT="$ANDROID_SDK_ROOT/ndk/29.0.14206865"
+  fi
+fi
 export ANDROID_NDK_HOME="$ANDROID_NDK_ROOT"
 TOOLCHAIN="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64"
 

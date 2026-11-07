@@ -84,16 +84,54 @@ bash scripts/build-android-rust.sh
 
 This compiles release libraries, enforces 16KB page alignment, validates exported JNI symbols, and verifies zero unresolved strong dependencies.
 
-### 2. Build the Android APK
+### 2. Build the Android APK (or App Bundle for Google Play)
 
-Build the signed debug APK via Gradle:
-
+**Debug APK** (for direct device installation):
 ```bash
 ./gradlew assembleDebug
 ```
-
 The output APK will be generated at:
 `app/build/outputs/apk/debug/PdfCraft-debug.apk`
+
+**Release App Bundle (AAB)** (for Google Play Store upload):
+```bash
+./gradlew bundleRelease
+```
+The output signed bundle will be generated at:
+`app/build/outputs/bundle/release/PdfCraft-release.aab`
+
+---
+
+## Google Play Store & CI/CD Deployment
+
+The repository includes an automated GitHub Actions release workflow at [`.github/workflows/play-store-release.yml`](.github/workflows/play-store-release.yml) that builds, signs, and deploys release App Bundles directly to Google Play.
+
+### 1. Initial Google Play Setup (One-time)
+
+Google Play's API requires that a new app be registered and have its **initial App Bundle uploaded manually once** via the [Google Play Console](https://play.google.com/console):
+
+1. In Google Play Console, click **Create app** (App name: `PdfCraft`, Package: `com.andrewnoonan.pdfcraft`).
+2. Go to **Testing > Internal testing** (or Closed testing), click **Create new release**, and upload the generated `PdfCraft-release.aab`.
+3. Complete the required Store Listing declarations (Privacy Policy, Content Rating, Target Audience).
+
+### 2. Automated Publishing via GitHub Actions
+
+To enable automated deployments from GitHub Actions:
+
+1. **Google Cloud Service Account**:
+   - In Google Play Console, navigate to **API access** and link a Google Cloud Project.
+   - Create a Service Account with the **Release manager** role.
+   - Generate and download a JSON key for the service account.
+2. **Configure GitHub Repository Secrets**:
+   - `PLAY_SERVICE_ACCOUNT_JSON`: Contents of the Google Play Service Account JSON key.
+   - `KEYSTORE_BASE64`: (Optional) Base64-encoded upload keystore (defaults to `app/keystore/pdfcraft.jks`).
+   - `KEYSTORE_PASSWORD`: Keystore password (defaults to `pdfcraft_store_2026`).
+   - `KEY_ALIAS`: Key alias (defaults to `pdfcraft`).
+   - `KEY_PASSWORD`: Key password (defaults to `pdfcraft_store_2026`).
+
+3. **Triggering a Release**:
+   - **Automatic**: Push a git tag (e.g. `git tag v0.17.1 && git push origin v0.17.1`).
+   - **Manual**: Go to **Actions > Google Play Store Release > Run workflow**, select the target track (`internal`, `alpha`, `beta`, `production`), and click **Run workflow**.
 
 ---
 
