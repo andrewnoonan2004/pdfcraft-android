@@ -1,5 +1,8 @@
 package com.andrewnoonan.pdfcraft.ui.theme
 
+import android.app.Activity
+import android.app.ActivityManager
+import android.content.ContextWrapper
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -8,7 +11,11 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
+import com.andrewnoonan.pdfcraft.R
 
 private val ExpressiveDarkColorScheme = darkColorScheme(
     primary = ExpressivePrimaryDark,
@@ -87,6 +94,41 @@ fun PdfCraftTheme(
         }
         darkTheme -> ExpressiveDarkColorScheme
         else -> ExpressiveLightColorScheme
+    }
+
+    val context = LocalContext.current
+    SideEffect {
+        val activity = context as? Activity
+            ?: (context as? ContextWrapper)?.baseContext as? Activity
+        activity?.let { act ->
+            val window = act.window
+            // Fully opaque color for TaskDescription & window status bar
+            val captionColor = colorScheme.surfaceContainer.toArgb() or 0xFF000000.toInt()
+            val navColor = colorScheme.surfaceContainer.toArgb() or 0xFF000000.toInt()
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val taskDesc = ActivityManager.TaskDescription.Builder()
+                    .setPrimaryColor(captionColor)
+                    .build()
+                act.setTaskDescription(taskDesc)
+            } else {
+                @Suppress("DEPRECATION")
+                act.setTaskDescription(
+                    ActivityManager.TaskDescription(
+                        act.getString(R.string.app_name),
+                        null,
+                        captionColor,
+                    ),
+                )
+            }
+
+            // Sync window status and navigation bar colors so Chrome OS / Android decor matches
+            window.statusBarColor = captionColor
+            window.navigationBarColor = navColor
+            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
+        }
     }
 
     MaterialTheme(

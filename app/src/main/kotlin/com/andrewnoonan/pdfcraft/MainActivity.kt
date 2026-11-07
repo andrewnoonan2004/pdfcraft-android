@@ -50,7 +50,6 @@ import com.andrewnoonan.pdfcraft.ui.CrashReportScreen
 import com.andrewnoonan.pdfcraft.ui.gl.PdfCraftGlSurfaceView
 import com.andrewnoonan.pdfcraft.ui.theme.PdfCraftTheme
 import com.andrewnoonan.pdfcraft.ui.workbench.DesktopControlOverlay
-import com.andrewnoonan.pdfcraft.ui.workbench.PdfCraftTitleBar
 import com.andrewnoonan.pdfcraft.ui.workbench.WorkbenchViewModel
 import com.andrewnoonan.pdfcraft.ui.workbench.WorkbenchViewModelFactory
 import kotlinx.coroutines.Dispatchers
@@ -270,9 +269,14 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                    LaunchedEffect(uiState.windowTitle, uiState.hasUnsavedChanges) {
+                        val base = uiState.windowTitle.ifBlank { getString(R.string.app_name) }
+                        title = if (uiState.hasUnsavedChanges) "• $base" else base
+                    }
+
                     val latestSticky = remember(uiState.stickyModifiers) { uiState.stickyModifiers }
 
-                    Column(
+                    Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.surface)
@@ -280,64 +284,47 @@ class MainActivity : ComponentActivity() {
                             .navigationBarsPadding()
                             .imePadding(),
                     ) {
-                        PdfCraftTitleBar(
+                        AndroidView(
+                            modifier = Modifier.fillMaxSize(),
+                            factory = { ctx ->
+                                PdfCraftGlSurfaceView(
+                                    context = ctx,
+                                    nativeBridge = nativeBridge,
+                                    engineHandleProvider = { viewModel.engineHandle },
+                                    stickyModifiersProvider = { viewModel.uiState.value.stickyModifiers },
+                                    onConsumeRightClickMode = { viewModel.consumeRightClickMode() },
+                                    onEffects = { effects -> viewModel.onFrameEffects(effects) },
+                                    enableGlThread = !WorkbenchDependencies.disableGlThreadForTesting,
+                                ).also { glView ->
+                                    glSurfaceViewRef = glView
+                                }
+                            },
+                            update = { _ ->
+                                val _unused = latestSticky
+                            },
+                        )
+
+                        DesktopControlOverlay(
                             state = uiState,
+                            onToggleExpanded = viewModel::toggleDesktopBarExpanded,
+                            onToggleCtrl = viewModel::toggleCtrl,
+                            onToggleShift = viewModel::toggleShift,
+                            onToggleAlt = viewModel::toggleAlt,
+                            onToggleRightClick = viewModel::toggleRightClickNextTap,
                             onCommand = { cmd ->
                                 viewModel.dispatchCommand(cmd)
                                 glSurfaceViewRef?.requestRender()
                             },
-                            onShareDocument = { viewModel.shareActiveDocument() },
-                            onToggleDesktopBar = viewModel::toggleDesktopBarExpanded,
                             onToggleKeyboard = viewModel::requestSoftKeyboardToggle,
-                        )
-
-                        Box(
+                            onShareDocument = { viewModel.shareActiveDocument() },
+                            onAdjustScale = { delta ->
+                                viewModel.adjustUiScale(delta)
+                                glSurfaceViewRef?.requestRender()
+                            },
                             modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth(),
-                        ) {
-                            AndroidView(
-                                modifier = Modifier.fillMaxSize(),
-                                factory = { ctx ->
-                                    PdfCraftGlSurfaceView(
-                                        context = ctx,
-                                        nativeBridge = nativeBridge,
-                                        engineHandleProvider = { viewModel.engineHandle },
-                                        stickyModifiersProvider = { viewModel.uiState.value.stickyModifiers },
-                                        onConsumeRightClickMode = { viewModel.consumeRightClickMode() },
-                                        onEffects = { effects -> viewModel.onFrameEffects(effects) },
-                                        enableGlThread = !WorkbenchDependencies.disableGlThreadForTesting,
-                                    ).also { glView ->
-                                        glSurfaceViewRef = glView
-                                    }
-                                },
-                                update = { _ ->
-                                    val _unused = latestSticky
-                                },
-                            )
-
-                            DesktopControlOverlay(
-                                state = uiState,
-                                onToggleExpanded = viewModel::toggleDesktopBarExpanded,
-                                onToggleCtrl = viewModel::toggleCtrl,
-                                onToggleShift = viewModel::toggleShift,
-                                onToggleAlt = viewModel::toggleAlt,
-                                onToggleRightClick = viewModel::toggleRightClickNextTap,
-                                onCommand = { cmd ->
-                                    viewModel.dispatchCommand(cmd)
-                                    glSurfaceViewRef?.requestRender()
-                                },
-                                onToggleKeyboard = viewModel::requestSoftKeyboardToggle,
-                                onShareDocument = { viewModel.shareActiveDocument() },
-                                onAdjustScale = { delta ->
-                                    viewModel.adjustUiScale(delta)
-                                    glSurfaceViewRef?.requestRender()
-                                },
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .padding(bottom = 10.dp, start = 12.dp, end = 12.dp),
-                            )
-                        }
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 10.dp, start = 12.dp, end = 12.dp),
+                        )
                     }
                 }
             }

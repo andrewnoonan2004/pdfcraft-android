@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.PdfCraft" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.PdfCraft" parent="android:Theme.Material.NoActionBar">
+        <!-- Chrome OS window titlebar matches the Material 3 Expressive theme -->
+        <item name="android:colorPrimary">@color/pdfcraft_primary_dark</item>
+        <item name="android:colorPrimaryDark">@color/pdfcraft_surface_container_dark</item>
+        <item name="android:statusBarColor">@color/pdfcraft_surface_container_dark</item>
+        <item name="android:navigationBarColor">@color/pdfcraft_surface_container_dark</item>
+        <item name="android:windowBackground">@color/pdfcraft_surface_dark</item>
+    </style>
 </resources>

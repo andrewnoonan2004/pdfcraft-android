@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Expressive Dark Colors (PdfCraft default) -->
+    <color name="pdfcraft_primary_dark">#87CFF9</color>
+    <color name="pdfcraft_primary_container_dark">#004D6B</color>
+    <color name="pdfcraft_surface_dark">#111418</color>
+    <color name="pdfcraft_surface_container_dark">#1B1F24</color>
+
+    <!-- Expressive Light Colors -->
+    <color name="pdfcraft_primary_light">#00668B</color>
+    <color name="pdfcraft_primary_container_light">#C7E7FF</color>
+    <color name="pdfcraft_surface_light">#F7F9FC</color>
+    <color name="pdfcraft_surface_container_light">#EBEFF3</color>
+</resources>
