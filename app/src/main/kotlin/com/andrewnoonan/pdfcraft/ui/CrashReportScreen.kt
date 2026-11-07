@@ -46,23 +46,23 @@ fun CrashReportScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF191B1F))
+            .background(MaterialTheme.colorScheme.surface)
             .safeDrawingPadding()
             .padding(16.dp),
     ) {
-        Text(title, style = MaterialTheme.typography.titleLarge, color = Color.White)
+        Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.height(4.dp))
         Text(
             "Copy this report and share it so the problem can be fixed.",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFFB8BCC4),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(12.dp))
         SelectionContainer(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .background(Color(0xFF0F1013))
+                .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                 .padding(8.dp)
                 .verticalScroll(rememberScrollState())
                 .horizontalScroll(rememberScrollState()),
@@ -70,7 +70,7 @@ fun CrashReportScreen(
             Text(
                 report,
                 modifier = Modifier.testTag("crash_report_text"),
-                color = Color(0xFFE6E6E6),
+                color = MaterialTheme.colorScheme.onSurface,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 12.sp,
             )

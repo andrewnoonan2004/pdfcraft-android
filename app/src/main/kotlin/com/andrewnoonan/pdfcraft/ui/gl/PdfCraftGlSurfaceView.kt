@@ -92,6 +92,24 @@ class PdfCraftGlSurfaceView(
         }
     }
 
+    override fun requestRender() {
+        if (!enableGlThread) return
+        try {
+            super.requestRender()
+        } catch (_: Throwable) {
+            // Ignored if GL thread has stopped or running without GL thread
+        }
+    }
+
+    override fun queueEvent(r: Runnable?) {
+        if (!enableGlThread || r == null) return
+        try {
+            super.queueEvent(r)
+        } catch (_: Throwable) {
+            // Ignored if GL thread has stopped
+        }
+    }
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         startChoreographerLoop()

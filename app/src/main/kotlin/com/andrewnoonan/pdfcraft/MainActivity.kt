@@ -13,13 +13,14 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,7 +48,9 @@ import com.andrewnoonan.pdfcraft.storage.SafDocumentStorageManager
 import com.andrewnoonan.pdfcraft.storage.SafMimeTypeMapper
 import com.andrewnoonan.pdfcraft.ui.CrashReportScreen
 import com.andrewnoonan.pdfcraft.ui.gl.PdfCraftGlSurfaceView
+import com.andrewnoonan.pdfcraft.ui.theme.PdfCraftTheme
 import com.andrewnoonan.pdfcraft.ui.workbench.DesktopControlOverlay
+import com.andrewnoonan.pdfcraft.ui.workbench.PdfCraftTitleBar
 import com.andrewnoonan.pdfcraft.ui.workbench.WorkbenchViewModel
 import com.andrewnoonan.pdfcraft.ui.workbench.WorkbenchViewModelFactory
 import kotlinx.coroutines.Dispatchers
@@ -227,7 +230,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) {
+            PdfCraftTheme {
                 var pendingReportToShow by remember {
                     mutableStateOf(startupError ?: previousCrashReport)
                 }
@@ -269,55 +272,72 @@ class MainActivity : ComponentActivity() {
 
                     val latestSticky = remember(uiState.stickyModifiers) { uiState.stickyModifiers }
 
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color(0xFF191B1F))
+                            .background(MaterialTheme.colorScheme.surface)
                             .statusBarsPadding()
                             .navigationBarsPadding()
                             .imePadding(),
                     ) {
-                        AndroidView(
-                            modifier = Modifier.fillMaxSize(),
-                            factory = { ctx ->
-                                PdfCraftGlSurfaceView(
-                                    context = ctx,
-                                    nativeBridge = nativeBridge,
-                                    engineHandleProvider = { viewModel.engineHandle },
-                                    stickyModifiersProvider = { viewModel.uiState.value.stickyModifiers },
-                                    onConsumeRightClickMode = { viewModel.consumeRightClickMode() },
-                                    onEffects = { effects -> viewModel.onFrameEffects(effects) },
-                                    enableGlThread = !WorkbenchDependencies.disableGlThreadForTesting,
-                                ).also { glView ->
-                                    glSurfaceViewRef = glView
-                                }
-                            },
-                            update = { _ ->
-                                val _unused = latestSticky
-                            },
-                        )
-
-                        DesktopControlOverlay(
+                        PdfCraftTitleBar(
                             state = uiState,
-                            onToggleExpanded = viewModel::toggleDesktopBarExpanded,
-                            onToggleCtrl = viewModel::toggleCtrl,
-                            onToggleShift = viewModel::toggleShift,
-                            onToggleAlt = viewModel::toggleAlt,
-                            onToggleRightClick = viewModel::toggleRightClickNextTap,
                             onCommand = { cmd ->
                                 viewModel.dispatchCommand(cmd)
                                 glSurfaceViewRef?.requestRender()
                             },
-                            onToggleKeyboard = viewModel::requestSoftKeyboardToggle,
                             onShareDocument = { viewModel.shareActiveDocument() },
-                            onAdjustScale = { delta ->
-                                viewModel.adjustUiScale(delta)
-                                glSurfaceViewRef?.requestRender()
-                            },
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 10.dp, start = 12.dp, end = 12.dp),
+                            onToggleDesktopBar = viewModel::toggleDesktopBarExpanded,
+                            onToggleKeyboard = viewModel::requestSoftKeyboardToggle,
                         )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                        ) {
+                            AndroidView(
+                                modifier = Modifier.fillMaxSize(),
+                                factory = { ctx ->
+                                    PdfCraftGlSurfaceView(
+                                        context = ctx,
+                                        nativeBridge = nativeBridge,
+                                        engineHandleProvider = { viewModel.engineHandle },
+                                        stickyModifiersProvider = { viewModel.uiState.value.stickyModifiers },
+                                        onConsumeRightClickMode = { viewModel.consumeRightClickMode() },
+                                        onEffects = { effects -> viewModel.onFrameEffects(effects) },
+                                        enableGlThread = !WorkbenchDependencies.disableGlThreadForTesting,
+                                    ).also { glView ->
+                                        glSurfaceViewRef = glView
+                                    }
+                                },
+                                update = { _ ->
+                                    val _unused = latestSticky
+                                },
+                            )
+
+                            DesktopControlOverlay(
+                                state = uiState,
+                                onToggleExpanded = viewModel::toggleDesktopBarExpanded,
+                                onToggleCtrl = viewModel::toggleCtrl,
+                                onToggleShift = viewModel::toggleShift,
+                                onToggleAlt = viewModel::toggleAlt,
+                                onToggleRightClick = viewModel::toggleRightClickNextTap,
+                                onCommand = { cmd ->
+                                    viewModel.dispatchCommand(cmd)
+                                    glSurfaceViewRef?.requestRender()
+                                },
+                                onToggleKeyboard = viewModel::requestSoftKeyboardToggle,
+                                onShareDocument = { viewModel.shareActiveDocument() },
+                                onAdjustScale = { delta ->
+                                    viewModel.adjustUiScale(delta)
+                                    glSurfaceViewRef?.requestRender()
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 10.dp, start = 12.dp, end = 12.dp),
+                            )
+                        }
                     }
                 }
             }
@@ -406,7 +426,10 @@ class MainActivity : ComponentActivity() {
                 for (doc in importedList) {
                     viewModel.openExternalDocument(doc.displayName, doc.localPath)
                 }
-                glSurfaceViewRef?.requestRender()
+                try {
+                    glSurfaceViewRef?.requestRender()
+                } catch (_: Throwable) {
+                }
             }
         }
     }

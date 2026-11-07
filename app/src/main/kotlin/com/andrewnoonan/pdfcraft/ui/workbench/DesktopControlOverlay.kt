@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,13 +37,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
-private val DockSurfaceColor = Color(0xEB181A20)
-private val DockBorderColor = Color(0xFF343846)
-private val ChipIdleColor = Color(0xFF252834)
-private val ChipActiveAccent = Color(0xFFB70228)
-private val TextPrimary = Color(0xFFF3F4F6)
-private val TextMuted = Color(0xFF9CA3AF)
-
+/**
+ * Material 3 Expressive floating desktop control overlay.
+ *
+ * Provides sticky modifier chips (Ctrl, Shift, Alt, Right-Click), desktop shortcuts,
+ * zoom controls, and bridge triggers with expressive tonal styling and interactive feedback.
+ */
 @Composable
 fun DesktopControlOverlay(
     state: WorkbenchUiState,
@@ -74,10 +74,11 @@ fun DesktopControlOverlay(
                     dragOffsetY += dragAmount.y
                 }
             },
-        shape = RoundedCornerShape(14.dp),
-        color = DockSurfaceColor,
-        border = BorderStroke(1.dp, DockBorderColor),
-        shadowElevation = 8.dp,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+        shadowElevation = 6.dp,
+        tonalElevation = 4.dp,
     ) {
         Row(
             modifier = Modifier
@@ -96,7 +97,7 @@ fun DesktopControlOverlay(
             if (state.isDesktopBarExpanded) {
                 DockDivider()
 
-                // Sticky Desktop Modifiers
+                // Sticky Desktop Modifiers (Expressive Primary Accent)
                 DockPillButton(
                     label = "Ctrl",
                     active = state.stickyModifiers.ctrl,
@@ -140,6 +141,7 @@ fun DesktopControlOverlay(
                 DockPillButton(
                     label = if (state.hasUnsavedChanges) "Save •" else "Save",
                     active = state.hasUnsavedChanges,
+                    accentColor = if (state.hasUnsavedChanges) MaterialTheme.colorScheme.tertiaryContainer else null,
                     tag = "btn_cmd_save",
                     onClick = { onCommand("file.save") },
                 )
@@ -211,7 +213,7 @@ fun DesktopControlOverlay(
                 )
                 Text(
                     text = "${state.uiScalePercent}%",
-                    color = TextMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(horizontal = 2.dp),
@@ -232,10 +234,25 @@ private fun DockPillButton(
     label: String,
     active: Boolean,
     tag: String,
+    accentColor: Color? = null,
     onClick: () -> Unit,
 ) {
-    val bg = if (active) ChipActiveAccent else ChipIdleColor
-    val borderColor = if (active) Color(0xFFFF4D6D) else Color(0xFF3B4052)
+    val bg = when {
+        accentColor != null -> accentColor
+        active -> MaterialTheme.colorScheme.primaryContainer
+        else -> MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f)
+    }
+    val contentColor = when {
+        accentColor != null -> MaterialTheme.colorScheme.onTertiaryContainer
+        active -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    val borderColor = when {
+        accentColor != null -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f)
+        active -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+        else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+    }
+
     Box(
         modifier = Modifier
             .testTag(tag)
@@ -248,9 +265,9 @@ private fun DockPillButton(
     ) {
         Text(
             text = label,
-            color = TextPrimary,
+            color = contentColor,
             fontSize = 12.sp,
-            fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+            fontWeight = if (active || accentColor != null) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
         )
     }
@@ -262,6 +279,6 @@ private fun DockDivider() {
         modifier = Modifier
             .width(1.dp)
             .height(18.dp)
-            .background(DockBorderColor),
+            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
     )
 }
