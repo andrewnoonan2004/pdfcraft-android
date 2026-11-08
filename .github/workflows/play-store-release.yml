@@ -85,24 +85,37 @@ jobs:
             echo "Using default repository keystore..."
           fi
 
-      - name: Build Signed App Bundle (AAB)
+      - name: Build Signed App Bundle (AAB) & Release APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'pdfcraft_store_2026' }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'pdfcraft' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'pdfcraft_store_2026' }}
         run: |
           chmod +x gradlew
-          ./gradlew bundleRelease --no-daemon
+          ./gradlew bundleRelease assembleRelease --no-daemon
 
-      - name: Verify Signed App Bundle (.aab)
+      - name: Verify Signed App Bundle (.aab) & Release APK (.apk)
         run: |
           AAB_FILE="app/build/outputs/bundle/release/PdfCraft-release.aab"
+          APK_FILE="app/build/outputs/apk/release/PdfCraft-release.apk"
           if [ ! -f "$AAB_FILE" ]; then
             echo "ERROR: $AAB_FILE does not exist!"
             exit 1
           fi
+          if [ ! -f "$APK_FILE" ]; then
+            echo "ERROR: $APK_FILE does not exist!"
+            exit 1
+          fi
+          echo "Release Bundle (AAB):"
           ls -lh "$AAB_FILE"
           jarsigner -verify -verbose -certs "$AAB_FILE" | grep -E "jar verified|signed" | head -n 5
+
+          echo "Release APK (non-debug):"
+          ls -lh "$APK_FILE"
+          jarsigner -verify -verbose -certs "$APK_FILE" | grep -E "jar verified|signed" | head -n 5
+
+          cd app/build/outputs/apk/release
+          sha256sum PdfCraft-release.apk > PdfCraft-release.apk.sha256
 
       - name: Upload App Bundle Artifact
         uses: actions/upload-artifact@v4
@@ -111,6 +124,28 @@ jobs:
           path: app/build/outputs/bundle/release/PdfCraft-release.aab
           if-no-files-found: error
           retention-days: 30
+
+      - name: Upload Release APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PdfCraft-release-apk
+          path: |
+            app/build/outputs/apk/release/PdfCraft-release.apk
+            app/build/outputs/apk/release/PdfCraft-release.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      # Attach both AAB and non-debug APK to GitHub Release when triggered by tag
+      - name: Attach Assets to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            app/build/outputs/bundle/release/PdfCraft-release.aab
+            app/build/outputs/apk/release/PdfCraft-release.apk
+            app/build/outputs/apk/release/PdfCraft-release.apk.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Publish directly to Google Play via Play Developer API
       - name: Check Play Store Service Account Secret

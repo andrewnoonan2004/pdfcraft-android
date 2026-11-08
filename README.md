@@ -86,11 +86,18 @@ This compiles release libraries, enforces 16KB page alignment, validates exporte
 
 ### 2. Build the Android APK (or App Bundle for Google Play)
 
-**Debug APK** (for direct device installation):
+**Non-Debug (Release) APK** (recommended for production, standalone installation, and distribution):
+```bash
+./gradlew assembleRelease
+```
+The output signed release APK will be generated at:
+`app/build/outputs/apk/release/PdfCraft-release.apk`
+
+**Debug APK** (for development and local testing):
 ```bash
 ./gradlew assembleDebug
 ```
-The output APK will be generated at:
+The output debug APK will be generated at:
 `app/build/outputs/apk/debug/PdfCraft-debug.apk`
 
 **Release App Bundle (AAB)** (for Google Play Store upload):
@@ -102,9 +109,19 @@ The output signed bundle will be generated at:
 
 ---
 
-## Google Play Store & CI/CD Deployment
+## CI/CD Workflows & GitHub Actions
 
-The repository includes an automated GitHub Actions release workflow at [`.github/workflows/play-store-release.yml`](.github/workflows/play-store-release.yml) that builds, signs, and deploys release App Bundles directly to Google Play.
+The repository includes automated GitHub Actions workflows:
+
+1. **Build Release APK** ([`.github/workflows/build-release-apk.yml`](.github/workflows/build-release-apk.yml)):
+   - Automatically builds, signs, and packages **non-debug release APKs** on push to `main`, version tags (`v*`), or via manual trigger (`workflow_dispatch`).
+   - Verifies v3 signatures, 16KB alignment, generates SHA256 checksums, and uploads downloadable artifacts (`PdfCraft-release-apk`).
+   - Attaches the non-debug APK and checksum to GitHub Releases on tagged builds.
+
+2. **Google Play Store Release** ([`.github/workflows/play-store-release.yml`](.github/workflows/play-store-release.yml)):
+   - Builds both release App Bundles (`.aab`) and non-debug APKs (`.apk`).
+   - Signs and deploys release App Bundles directly to Google Play tracks (`internal`, `alpha`, `beta`, `production`).
+   - Attaches both the `.aab` and `.apk` to the GitHub Release.
 
 ### 1. Initial Google Play Setup (One-time)
 
