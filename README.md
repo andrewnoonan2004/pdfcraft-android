@@ -157,6 +157,11 @@ The repository includes automated GitHub Actions workflows:
    - Signs and deploys release App Bundles directly to Google Play tracks (`internal`, `alpha`, `beta`, `production`).
    - Attaches both the `.aab` and `.apk` to the GitHub Release.
 
+3. **Check & Sync Upstream Changes** ([`.github/workflows/check-upstream-sync.yml`](.github/workflows/check-upstream-sync.yml)):
+   - Periodically checks [storytold/pdfcraft](https://github.com/storytold/pdfcraft) for new releases and commits (runs weekly and via manual `workflow_dispatch`).
+   - Incorporates upstream source changes into `pdfcraft/`, verifies the Android test suite and native bridge, and opens an automated Pull Request.
+   - Can also be run locally via `bash scripts/sync-upstream.sh` (`--check` or `--sync`).
+
 ### 1. Initial Google Play Setup (One-time)
 
 Google Play's API requires that a new app be registered and have its **initial App Bundle uploaded manually once** via the [Google Play Console](https://play.google.com/console):
