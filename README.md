@@ -46,6 +46,40 @@ PdfCraft on Android embeds the genuine 35-crate desktop PDF engine and egui-base
 
 ---
 
+## Screenshots & Interface Tour
+
+| Document Viewer (Light Mode) | Material 3 Expressive (Dark Mode) |
+|:---:|:---:|
+| ![PdfCraft Viewer](docs/screenshots/pdfcraft-viewer.png) | ![PdfCraft Dark Theme](docs/screenshots/pdfcraft-dark.png) |
+| *Continuous high-refresh document reading with zoom & panning* | *Tonal dark theme adapting to wallpaper and system colors* |
+
+| Page Organizer & Thumbnails | Command Palette (`Ctrl+K`) |
+|:---:|:---:|
+| ![Page Organizer](docs/screenshots/pdfcraft-organize.png) | ![Command Palette](docs/screenshots/pdfcraft-palette.png) |
+| *Visual grid to reorder, rotate, extract, or delete pages* | *Quick-action fuzzy palette for instant navigation and commands* |
+
+| Two-Up Book Spread | Split Document Comparison |
+|:---:|:---:|
+| ![Two-Up View](docs/screenshots/pdfcraft-twoup.png) | ![Split View](docs/screenshots/pdfcraft-split.png) |
+| *Facing pages mode with optional cover page offset* | *Side-by-side split view for comparing document revisions* |
+
+| Tools Drawer & Annotations | In-Document Search (`Ctrl+F`) |
+|:---:|:---:|
+| ![Tools Drawer](docs/screenshots/pdfcraft-tools.png) | ![Search & Find](docs/screenshots/pdfcraft-find.png) |
+| *Highlighters, freehand pen, shapes, notes, and stamps* | *Fast text search with count indicators and jump navigation* |
+
+| Interactive PDF Forms | Bookmarks & Document Outline |
+|:---:|:---:|
+| ![Forms](docs/screenshots/pdfcraft-forms.png) | ![Bookmarks](docs/screenshots/pdfcraft-bookmarks.png) |
+| *Full form fill support for text fields, checkboxes & radios* | *Hierarchical outline tree for rapid chapter navigation* |
+
+| Content Layers & Visibility | Document Properties & Security |
+|:---:|:---:|
+| ![Layers](docs/screenshots/pdfcraft-layers.png) | ![Properties](docs/screenshots/pdfcraft-properties.png) |
+| *Toggle Optional Content Groups (OCGs) and CAD/drawing layers* | *Inspect metadata, fonts, PDF version, and encryption details* |
+
+---
+
 ## Project Structure
 
 ```
