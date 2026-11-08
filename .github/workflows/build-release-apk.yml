@@ -43,6 +43,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       # Optional: Compile native Rust bridge from source if requested
       - name: Set up Rust Toolchain
