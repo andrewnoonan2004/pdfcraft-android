@@ -3,35 +3,8 @@
 
 pub use craft_print::{
     Duplex, HANDLED_OPTIONS, HAS_PRINTER_PREFERENCES, Job, Printer, PrinterOption, Scaling, lp_args, lpstat_command, parse_lpoptions, parse_lpstat,
-    parse_lpstat_e, parse_ppd, parse_windows_printers, ppd_text, printers_parsed,
+    parse_lpstat_e, parse_ppd, parse_windows_printers, ppd_text, printers, printers_parsed,
 };
-
-/// Printer destination label advertised when a host print service hook (such as Android
-/// `PrintManager`) is installed.
-pub const HOST_PRINTER_NAME: &str = "Android System Print";
-
-/// Host print service callback invoked with `(pdf_bytes, job)` when installed.
-pub type SubmitHook = std::sync::Arc<dyn Fn(&[u8], &Job) -> Result<String, String> + Send + Sync>;
-
-static SUBMIT_HOOK: std::sync::Mutex<Option<SubmitHook>> = std::sync::Mutex::new(None);
-
-/// Install or clear a host print service hook.
-pub fn set_submit_hook(hook: Option<SubmitHook>) {
-    *SUBMIT_HOOK.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = hook;
-}
-
-/// Available system printers, or [`HOST_PRINTER_NAME`] when a host print hook is installed.
-pub fn printers() -> Vec<Printer> {
-    if SUBMIT_HOOK.lock().unwrap_or_else(std::sync::PoisonError::into_inner).is_some() {
-        return vec![Printer {
-            name: HOST_PRINTER_NAME.to_string(),
-            default: true,
-            two_sided: Some(true),
-            description: "System Print Service".to_string(),
-        }];
-    }
-    craft_print::printers()
-}
 
 /// The driver's job options for a printer (CUPS: its PPD, with the queue's current defaults);
 /// empty when it has none or on other platforms. Reads files and runs `lpoptions`, so call it
@@ -44,10 +17,6 @@ pub fn printer_options(printer: &str) -> Vec<PrinterOption> {
 /// `pt-br` or `zh-hans`) where its PPD has them (`*bg.Translation`, `*bg.InputSlot Tray2/…`);
 /// the driver's default names otherwise.
 pub fn printer_options_in(printer: &str, lang: &str) -> Vec<PrinterOption> {
-    if cfg!(target_os = "android") || printer == HOST_PRINTER_NAME {
-        let _ = lang;
-        return Vec::new();
-    }
     #[cfg(all(unix, not(target_arch = "wasm32")))]
     {
         printer_options_via_within(printer, std::path::Path::new("/etc/cups/ppd"), std::process::Command::new("lpoptions"), LPOPTIONS_LIMIT, lang)
@@ -174,24 +143,62 @@ pub(crate) fn printer_options_via_within(
     options
 }
 
-pub fn submit(pdf: &[u8], job: &Job) -> Result<String, crate::PrintError> {
-    let hook = SUBMIT_HOOK.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
-    if let Some(submit_fn) = hook {
-        return submit_fn(pdf, job).map_err(crate::PrintError::Spool);
+/// The keys the macOS print dialog names a job's title and owner under.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+const JOB_NAME_KEY: &str = "com.apple.print.JobInfo.PMJobName";
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+const JOB_OWNER_KEY: &str = "com.apple.print.JobInfo.PMJobOwner";
+
+/// `text` as a job option's value: `lp_args` passes on only printable ASCII, up to 64 bytes,
+/// without `/ : = "`, and CUPS would take `'` and `\` as quoting and `{` as the start of a
+/// collection, so all of these become `_`. Text with nothing left of it, such as a title in
+/// another script, takes `fallback`: the job must still name something. So does a bare `true` or
+/// `false`, which CUPS would send as a boolean, not the name a filter reads.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn job_option_value(text: &str, fallback: &str) -> String {
+    let kept = |c: char| c.is_ascii_graphic() && !matches!(c, '/' | ':' | '=' | '"' | '\'' | '\\' | '{');
+    let value: String = text.chars().take(64).map(|c| if kept(c) { c } else { '_' }).collect();
+    if !text.chars().any(kept) || value.eq_ignore_ascii_case("true") || value.eq_ignore_ascii_case("false") {
+        return fallback.to_string();
     }
-    craft_print::submit(pdf, job).map_err(|e| crate::PrintError::Spool(e.to_string()))
+    value
+}
+
+/// `job` naming its title and `owner` as a job from the macOS print dialog does. `lp` sends
+/// neither, and a driver's filter can depend on them: Kyocera's crashes without them, so nothing
+/// prints, while the same file sent with both does (#5743). A value the caller set stands: the
+/// last of a repeated option wins in CUPS, which compares their names without case.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub(crate) fn with_job_info(job: &Job, owner: Option<&str>) -> Job {
+    let mut named = job.clone();
+    for (key, value) in [(JOB_NAME_KEY, job.title.as_str()), (JOB_OWNER_KEY, owner.unwrap_or_default())] {
+        if !job.options.iter().any(|(k, _)| k.eq_ignore_ascii_case(key)) {
+            named.options.push((key.to_string(), job_option_value(value, "PdfCraft")));
+        }
+    }
+    named
+}
+
+/// The job as the system spooler takes it.
+fn spooled(job: &Job) -> Job {
+    #[cfg(target_os = "macos")]
+    {
+        with_job_info(job, std::env::var("USER").ok().as_deref())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        job.clone()
+    }
+}
+
+pub fn submit(pdf: &[u8], job: &Job) -> Result<String, crate::PrintError> {
+    craft_print::submit(pdf, &spooled(job)).map_err(|e| crate::PrintError::Spool(e.to_string()))
 }
 
 /// [`submit`], told `(sent, sheets)` as each sheet reaches the spooler (Windows; CUPS takes the
 /// whole PDF at once and reports nothing).
 pub fn submit_with_progress(pdf: &[u8], job: &Job, progress: &mut dyn FnMut(usize, usize)) -> Result<String, crate::PrintError> {
-    let hook = SUBMIT_HOOK.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
-    if let Some(submit_fn) = hook {
-        let out = submit_fn(pdf, job).map_err(crate::PrintError::Spool)?;
-        progress(1, 1);
-        return Ok(out);
-    }
-    craft_print::submit_with_progress(pdf, job, progress).map_err(|e| crate::PrintError::Spool(e.to_string()))
+    craft_print::submit_with_progress(pdf, &spooled(job), progress).map_err(|e| crate::PrintError::Spool(e.to_string()))
 }
 
 pub fn open_printer_preferences(printer: &str) -> Result<(), crate::PrintError> {
