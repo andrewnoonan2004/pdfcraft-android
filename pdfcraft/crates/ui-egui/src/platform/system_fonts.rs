@@ -13,7 +13,7 @@ use std::sync::{Arc, OnceLock};
 
 use egui::FontData;
 
-#[cfg(all(unix, not(target_os = "macos"), not(target_os = "android"), not(target_arch = "wasm32")))]
+#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))]
 mod fontconfig;
 
 /// Larger files are not read: a font path is still untrusted input.
@@ -170,18 +170,12 @@ fn macos_devanagari_candidates() -> Vec<PathBuf> {
     list
 }
 
-fn android_fonts(files: &[&str]) -> Vec<PathBuf> {
-    files.iter().map(|f| Path::new("/system/fonts").join(f)).collect()
-}
-
 /// Well-known locations of Devanagari (Hindi) faces, best first.
 fn devanagari_candidates() -> Vec<PathBuf> {
     if cfg!(windows) {
         ["Nirmala.ttf", "NirmalaB.ttf", "mangal.ttf", "aparaj.ttf", "utsah.ttf"].iter().map(|f| windows_fonts().join(f)).collect()
     } else if cfg!(target_os = "macos") {
         macos_devanagari_candidates()
-    } else if cfg!(target_os = "android") {
-        android_fonts(&["NotoSansDevanagariUI-Regular.ttf", "NotoSansDevanagari-Regular.ttf", "NotoSansDevanagari-VF.ttf"])
     } else {
         unix_fonts(&[
             "google-noto/NotoSansDevanagariUI-Regular.ttf",
@@ -216,8 +210,6 @@ fn telugu_candidates() -> Vec<PathBuf> {
         .iter()
         .map(PathBuf::from)
         .collect()
-    } else if cfg!(target_os = "android") {
-        android_fonts(&["NotoSansTeluguUI-Regular.ttf", "NotoSansTelugu-Regular.ttf", "NotoSansTelugu-VF.ttf"])
     } else {
         unix_fonts(&[
             "google-noto/NotoSansTeluguUI-Regular.ttf",
@@ -245,8 +237,6 @@ fn sinhala_candidates() -> Vec<PathBuf> {
             .iter()
             .map(PathBuf::from)
             .collect()
-    } else if cfg!(target_os = "android") {
-        android_fonts(&["NotoSansSinhalaUI-Regular.ttf", "NotoSansSinhala-Regular.ttf", "NotoSansSinhala-VF.ttf"])
     } else {
         unix_fonts(&[
             "google-noto/NotoSansSinhalaUI-Regular.ttf",
@@ -273,8 +263,6 @@ fn tamil_candidates() -> Vec<PathBuf> {
         .iter()
         .map(PathBuf::from)
         .collect()
-    } else if cfg!(target_os = "android") {
-        android_fonts(&["NotoSansTamilUI-Regular.ttf", "NotoSansTamil-Regular.ttf", "NotoSansTamil-VF.ttf"])
     } else {
         unix_fonts(&[
             "google-noto/NotoSansTamilUI-Regular.ttf",
@@ -300,8 +288,6 @@ fn hebrew_candidates() -> Vec<PathBuf> {
             .iter()
             .map(PathBuf::from)
             .collect()
-    } else if cfg!(target_os = "android") {
-        android_fonts(&["NotoSansHebrew-Regular.ttf", "DroidSansHebrew-Regular.ttf"])
     } else {
         unix_fonts(&[
             "google-noto/NotoSansHebrew-Regular.ttf",
@@ -332,8 +318,6 @@ fn other_candidates() -> Vec<PathBuf> {
             .iter()
             .map(PathBuf::from)
             .collect()
-    } else if cfg!(target_os = "android") {
-        android_fonts(&["NotoNaskhArabicUI-Regular.ttf", "NotoNaskhArabic-Regular.ttf", "NotoSansArabic-Regular.ttf"])
     } else {
         unix_fonts(&[
             "truetype/noto/NotoSansArabic-Regular.ttf",
@@ -355,14 +339,7 @@ fn han_candidates(traditional: bool) -> Vec<PathBuf> {
             if traditional { &["msjh.ttc", "msyh.ttc", "mingliu.ttc", "simsun.ttc"] } else { &["msyh.ttc", "msjh.ttc", "simsun.ttc", "mingliu.ttc"] };
         files.iter().map(|f| windows_fonts().join(f)).collect()
     } else if cfg!(target_os = "macos") {
-        let files: &[&str] = if traditional {
-            &["PingFang.ttc", "STHeiti Light.ttc", "STHeiti Medium.ttc", "Hiragino Sans GB.ttc"]
-        } else {
-            &["PingFang.ttc", "Hiragino Sans GB.ttc", "STHeiti Light.ttc", "STHeiti Medium.ttc"]
-        };
-        files.iter().map(|f| Path::new("/System/Library/Fonts").join(f)).collect()
-    } else if cfg!(target_os = "android") {
-        android_fonts(&["NotoSansCJK-Regular.ttc", "DroidSansFallback.ttf"])
+        macos_han_candidates(traditional)
     } else {
         unix_fonts(&[
             "truetype/wqy/wqy-microhei.ttc",
@@ -380,6 +357,26 @@ fn han_candidates(traditional: bool) -> Vec<PathBuf> {
     }
 }
 
+/// macOS 26 moved PingFang out of `/System/Library/Fonts` into the reserved system-font directory;
+/// face 0 of that collection is the SC UI face. Older systems still have `PingFang.ttc`, which wins.
+const MACOS_PINGFANG_UI: &str = "/System/Library/PrivateFrameworks/FontServices.framework/Resources/Reserved/PingFangUI.ttc";
+
+fn macos_han_candidates(traditional: bool) -> Vec<PathBuf> {
+    let dir = Path::new("/System/Library/Fonts");
+    let pingfang_ui = PathBuf::from(MACOS_PINGFANG_UI);
+    let mut list = vec![dir.join("PingFang.ttc")];
+    if traditional {
+        // Face 0 of PingFangUI.ttc is Simplified Chinese, so STHeiti stays ahead of it.
+        list.extend(["STHeiti Light.ttc", "STHeiti Medium.ttc"].iter().map(|f| dir.join(f)));
+        list.push(pingfang_ui);
+        list.push(dir.join("Hiragino Sans GB.ttc"));
+    } else {
+        list.push(pingfang_ui);
+        list.extend(["Hiragino Sans GB.ttc", "STHeiti Light.ttc", "STHeiti Medium.ttc"].iter().map(|f| dir.join(f)));
+    }
+    list
+}
+
 /// Well-known locations of Korean faces, best first.
 fn hangul_candidates() -> Vec<PathBuf> {
     if cfg!(windows) {
@@ -389,8 +386,6 @@ fn hangul_candidates() -> Vec<PathBuf> {
             .iter()
             .map(PathBuf::from)
             .collect()
-    } else if cfg!(target_os = "android") {
-        android_fonts(&["NotoSansCJK-Regular.ttc", "NanumGothic.ttf"])
     } else {
         unix_fonts(&[
             "truetype/nanum/NanumGothic.ttf",
@@ -411,9 +406,9 @@ fn windows_fonts() -> PathBuf {
 }
 
 fn unix_fonts(files: &'static [&'static str]) -> Vec<PathBuf> {
-    #[cfg(all(unix, not(target_os = "macos"), not(target_os = "android"), not(target_arch = "wasm32")))]
+    #[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))]
     static INSTALLED: OnceLock<Vec<PathBuf>> = OnceLock::new();
-    #[cfg(all(unix, not(target_os = "macos"), not(target_os = "android"), not(target_arch = "wasm32")))]
+    #[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))]
     // Read once per process, and not at all when installed fonts are turned off.
     let installed = INSTALLED
         .get_or_init(|| {
@@ -423,7 +418,7 @@ fn unix_fonts(files: &'static [&'static str]) -> Vec<PathBuf> {
             fontconfig::font_files(&fontconfig::config_path())
         })
         .as_slice();
-    #[cfg(not(all(unix, not(target_os = "macos"), not(target_os = "android"), not(target_arch = "wasm32"))))]
+    #[cfg(not(all(unix, not(target_os = "macos"), not(target_arch = "wasm32"))))]
     let installed: &[PathBuf] = &[];
     unix_candidates(files, installed)
 }
@@ -713,5 +708,22 @@ mod tests {
         } else {
             eprintln!("{last_resort:?} is not installed on this machine — optional to the loader, so nothing to check");
         }
+    }
+
+    #[test]
+    fn macos_simplified_prefers_pingfang_ui_over_hiragino() {
+        let list = macos_han_candidates(false);
+        let pos = |name: &str| list.iter().position(|p| p.ends_with(name));
+        assert_eq!(pos("PingFang.ttc"), Some(0));
+        assert_eq!(list[1], PathBuf::from(MACOS_PINGFANG_UI));
+        assert!(pos("PingFangUI.ttc") < pos("Hiragino Sans GB.ttc"));
+    }
+
+    #[test]
+    fn macos_traditional_keeps_stheiti_ahead_of_pingfang_ui() {
+        let list = macos_han_candidates(true);
+        let pos = |name: &str| list.iter().position(|p| p.ends_with(name));
+        assert!(pos("STHeiti Medium.ttc") < pos("PingFangUI.ttc"));
+        assert!(pos("PingFangUI.ttc").is_some());
     }
 }
